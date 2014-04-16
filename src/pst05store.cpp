@@ -1,26 +1,24 @@
 #include "pst05store.h"
 
-PST05Store::PST05Store(QSettings *settings, PST05Query *iQuery)
+PST05Store::PST05Store(QSettings *settings, PST05Query *iQuery) :
+    ticks(0)
 {
     this->iQuery = iQuery;
+    regularQueryInterval = settings->value("regularInterval", REGULARQUERY_INTERVAL_DEFAULT).toUInt();
+    postInterval = settings->value("postInterval", POST_INTERVAL_DEFAULT).toUInt();
 
-    post = new QTimer(this);
-    connect(post, SIGNAL(timeout()), this, SLOT(timerPostToServer()));
-    post->start(settings->value("postInterval", POST_INTERVAL_DEFAULT).toUInt());
-
-    regular = new QTimer(this);
-    connect(regular, SIGNAL(timeout()), this, SLOT(timerRegularQuery()));
-    regular->start(settings->value("regularInterval", REGULAR_INTERVAL_DEFAULT).toUInt());
+    regularQuery = new QTimer(this);
+    connect(regularQuery, SIGNAL(timeout()), this, SLOT(timerRegularQuery()));
+    regularQuery->start(regularQueryInterval);
 }
 
 PST05Store::~PST05Store()
 {
-    if (post) post->deleteLater();
-    if (regular) regular->deleteLater();
+    if (regularQuery) regularQuery->deleteLater();
     if (manager) manager->deleteLater();
 }
 
-void PST05Store::timerPostToServer()
+/*void PST05Store::timerPostToServer()
 {
     QJsonObject obj;
     if (iQuery)
@@ -36,9 +34,16 @@ void PST05Store::timerPostToServer()
 
         // TODO: If successful => clean up the list
     }
-}
+}*/
 
 void PST05Store::timerRegularQuery()
 {
-    // TODO: Query the sensor for data, store it, and at some point calculate the average and add it to the POST list
+    // TODO: Query the sensor for data and store it
+
+    if (++ticks == postInterval / regularQueryInterval)
+    {
+        // Calculate the average and add it to the POST list
+        // POST the data in that list
+        ticks = 0;
+    }
 }

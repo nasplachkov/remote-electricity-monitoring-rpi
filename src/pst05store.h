@@ -10,7 +10,7 @@
 #include "pst05data.h"
 
 #define POST_INTERVAL_DEFAULT 15 * 60 * 1000    // 15 minutes
-#define REGULAR_INTERVAL_DEFAULT 15 * 1000      // 15 seconds
+#define REGULARQUERY_INTERVAL_DEFAULT 15 * 1000      // 15 seconds
 
 /**
  * @brief The PST05Store class
@@ -26,17 +26,22 @@ public:
     ~PST05Store();
 
 private slots:
-    void timerPostToServer();
     void timerRegularQuery();
 
 private:
-    QTimer *post;
-    QTimer *regular;
+    QTimer *regularQuery;
 
     QNetworkAccessManager *manager;
     PST05Query *iQuery;
     QList<QJsonObject> postQueries;
     QList<PST05Data> regularQueries;
+
+    /**
+     * Counter for the times that device query has been called
+     */
+    uint ticks;
+    uint regularQueryInterval;
+    uint postInterval;
 };
 
 #endif // PST05STORE_H
