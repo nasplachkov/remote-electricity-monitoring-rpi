@@ -4,25 +4,25 @@
 #
 #-------------------------------------------------
 
-QT += core network serialport
+QT += network serialport
 QT -= gui
 
 TARGET = remote-electricity-monitoring
-CONFIG   += console
-CONFIG   -= app_bundle
 
 TEMPLATE = app
 
 SOURCES += main.cpp \
     httpserver.cpp \
     pst05.cpp \
-    pst05data.cpp
+    pst05data.cpp \
+    pst05store.cpp
 
 HEADERS += \
     httpserver.h \
     pst05.h \
     pst05query.h \
-    pst05data.h
+    pst05data.h \
+    pst05store.h
 
 LIBS += -L$$PWD/../ -lqhttpserver
 

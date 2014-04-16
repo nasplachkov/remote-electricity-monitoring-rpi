@@ -28,5 +28,8 @@ QJsonObject PST05Data::toJSON()
     obj["I"] = I;
     obj["F"] = F;
 
+    obj["id"] = QString(deviceId);
+    obj["date"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+
     return obj;
 }

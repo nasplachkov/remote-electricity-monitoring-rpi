@@ -3,6 +3,11 @@
 
 #include "pst05data.h"
 
+/**
+ * @brief The PST05Query class
+ *
+ * Should be inherited by PST05 class
+ */
 class PST05Query
 {
 public:

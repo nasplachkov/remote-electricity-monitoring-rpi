@@ -2,12 +2,17 @@
 #define PST05DATA_H
 
 #include <QJsonObject>
+#include <QDateTime>
 
 #include "pst05.h"
 
+/**
+ * @brief The PST05Data class
+ *
+ * Only PST05 class will be able to create a new empty object
+ */
 class PST05Data
 {
-    // Only PST05 class will be able to create a new empty object
     PST05Data(bool empty);
 
 public:
@@ -22,6 +27,8 @@ public:
     double I;
     double F;
     // Add other
+
+    QByteArray deviceId;
 
 private:
     bool empty;

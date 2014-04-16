@@ -1,22 +1,21 @@
 #include "httpserver.h"
 
-HttpServer::HttpServer(unsigned short port, PST05Query *iQuery)
+HttpServer::HttpServer(QSettings *settings, PST05Query *iQuery)
 {
     server = new QHttpServer(this);
     connect(server, SIGNAL(newRequest(QHttpRequest*,QHttpResponse*)), this, SLOT(router(QHttpRequest*,QHttpResponse*)));
 
-    if (server->listen(port))
+    if (server->listen(settings->value("PORT", PORT_DEFAULT).toUInt()))
     {
-        printf("Listening on port %d\n", port);
+        qDebug() << "Listening on port " << settings->value("PORT", PORT_DEFAULT).toUInt();
     }
     else
     {
-        printf("Could not listen on that port...");
+        qDebug() << "Could not listen on that port...";
         exit(1);
     }
 
     this->iQuery = iQuery;
-    deviceId = "TODO: GET DEVICE ID";
 }
 
 HttpServer::~HttpServer()
@@ -53,9 +52,6 @@ noData:
         if (pst05data.isEmpty()) goto noData;
 
         QJsonObject data = pst05data.toJSON();
-        data["id"] = deviceId;
-        data["date"] = QString("TODO: PUT ISO DATE");
-
         QJsonDocument json(data);
 
         res->writeHead(QHttpResponse::STATUS_OK);
