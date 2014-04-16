@@ -1,2 +1,3 @@
-﻿build*/
 *.pro.user
+libqhttpserver.a
+
