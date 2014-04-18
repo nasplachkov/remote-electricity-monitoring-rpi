@@ -42,6 +42,7 @@ void PST05Store::connectTimeout()
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     req.setHeader(QNetworkRequest::ContentLengthHeader, data.length());
 
+    qDebug() << "Trying to connect to the master server...";
     manager->post(req, data);
 }
 
@@ -104,6 +105,7 @@ void PST05Store::deviceQueryTimeout()
         req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
         req.setHeader(QNetworkRequest::ContentLengthHeader, data.length());
 
+        qDebug() << "Trying to save the average data for the past - " << averageData.length() * (postInterval / 60000) << " minutes";
         manager->post(req, data);
     }
 }
@@ -112,12 +114,17 @@ void PST05Store::connectResponse(QNetworkReply *reply)
 {
     if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == QHttpResponse::STATUS_OK)
     {
+        qDebug() << "Connection to the master server was successful. The device has been registered!";
         connectTimer->stop();
 
         // Reconnect the manager
         connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(dataSaveResponse(QNetworkReply*)));
 
         deviceQueryTimer->start(deviceQueryInterval);
+    }
+    else
+    {
+        qDebug() << "Connection to the master server was UNsuccessful!";
     }
     reply->deleteLater();
 }

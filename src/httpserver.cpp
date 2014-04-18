@@ -25,6 +25,8 @@ HttpServer::~HttpServer()
 
 void HttpServer::router(QHttpRequest *req, QHttpResponse *res)
 {
+    qDebug() << req->method() << " - " << req->path();
+
     if (req->path() == "/pst05")
     {
         manageSensorData(req, res);
