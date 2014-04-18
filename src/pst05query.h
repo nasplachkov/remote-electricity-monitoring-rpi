@@ -12,6 +12,7 @@ class PST05Query
 {
 public:
     virtual PST05Data queryDevice() = 0;
+    virtual QByteArray deviceId() = 0;
 };
 
 #endif // PST05QUERY_H

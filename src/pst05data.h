@@ -24,9 +24,9 @@ public:
     QJsonObject toJSON();
 
     double U1, U2, U3;
-    double I;
+    double I1, I2, I3;
+    double P, Q;
     double F;
-    // Add other
 
     QByteArray deviceId;
 

@@ -3,47 +3,127 @@
 PST05Store::PST05Store(QSettings *settings, PST05Query *iQuery) :
     ticks(0)
 {
+    this->settings = settings;
     this->iQuery = iQuery;
-    regularQueryInterval = settings->value("regularInterval", REGULARQUERY_INTERVAL_DEFAULT).toUInt();
+    deviceQueryInterval = settings->value("regularInterval", REGULARQUERY_INTERVAL_DEFAULT).toUInt();
     postInterval = settings->value("postInterval", POST_INTERVAL_DEFAULT).toUInt();
 
-    regularQuery = new QTimer(this);
-    connect(regularQuery, SIGNAL(timeout()), this, SLOT(timerRegularQuery()));
-    regularQuery->start(regularQueryInterval);
+    deviceQueryTimer = new QTimer(this);
+    connect(deviceQueryTimer, SIGNAL(timeout()), this, SLOT(deviceQueryTimeout()));
+
+    manager = new QNetworkAccessManager(this);
+    connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(connectResponse(QNetworkReply*)));
+
+    connectTimer = new QTimer(this);
+    connect(connectTimer, SIGNAL(timeout()), this, SLOT(connectTimeout()));
+    connectTimer->start(CONNECT_INTERVAL);
 }
 
 PST05Store::~PST05Store()
 {
-    if (regularQuery) regularQuery->deleteLater();
+    if (deviceQueryTimer) deviceQueryTimer->deleteLater();
     if (manager) manager->deleteLater();
 }
 
-/*void PST05Store::timerPostToServer()
+void PST05Store::connectTimeout()
 {
     QJsonObject obj;
-    if (iQuery)
-    {
-        obj = iQuery->queryDevice().toJSON();
-    }
+    obj["id"] = QString(iQuery->deviceId());
+    obj["port"] = QString("%1").arg(settings->value("PORT", PORT_DEFAULT).toUInt());
+    obj["date"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
-    if (!obj.empty()) postQueries.append(obj);
+    QJsonDocument document;
+    document.setObject(obj);
 
-    if (!postQueries.empty())
-    {
-        // Send all queries to the master server
+    QByteArray data = document.toJson();
 
-        // TODO: If successful => clean up the list
-    }
-}*/
+    QNetworkRequest req;
+    req.setUrl(QUrl(QString("%1%2").arg(MASTER_SERVER_ADDRESS, "/connect")));
+    req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+    req.setHeader(QNetworkRequest::ContentLengthHeader, data.length());
 
-void PST05Store::timerRegularQuery()
+    manager->post(req, data);
+}
+
+void PST05Store::deviceQueryTimeout()
 {
-    // TODO: Query the sensor for data and store it
+    deviceQueries.append(iQuery->queryDevice());
 
-    if (++ticks == postInterval / regularQueryInterval)
+    if (++ticks == postInterval / deviceQueryInterval)
     {
         // Calculate the average and add it to the POST list
-        // POST the data in that list
+        PST05Data average(deviceQueries[0]);
+
+        for (int i = 1; i < deviceQueries.length(); i++)
+        {
+            average.U1 += deviceQueries[i].U1;
+            average.U2 += deviceQueries[i].U2;
+            average.U3 += deviceQueries[i].U3;
+            average.I1 += deviceQueries[i].I1;
+            average.I2 += deviceQueries[i].I2;
+            average.I3 += deviceQueries[i].I3;
+            average.P += deviceQueries[i].P;
+            average.Q += deviceQueries[i].Q;
+            average.F += deviceQueries[i].F;
+        }
+        average.U1 /= deviceQueries.length();
+        average.U2 /= deviceQueries.length();
+        average.U3 /= deviceQueries.length();
+        average.I1 /= deviceQueries.length();
+        average.I2 /= deviceQueries.length();
+        average.I3 /= deviceQueries.length();
+        average.P /= deviceQueries.length();
+        average.Q /= deviceQueries.length();
+        average.F /= deviceQueries.length();
+
+        // Put the new average in the average list
+        averageData.append(average.toJSON());
+
+        // Clear the used up list
+        deviceQueries.clear();
+
         ticks = 0;
+
+        // Make a POST to save data
+        QJsonArray arr;
+        for (int i = 0; i < averageData.length(); i++)
+        {
+            arr.append(averageData[i]);
+        }
+
+        QJsonObject obj;
+        obj["deviceId"] = QString(iQuery->deviceId());
+        obj["queries"] = arr;
+
+        QJsonDocument json;
+        json.setObject(obj);
+        QByteArray data = json.toJson();
+
+        QNetworkRequest req;
+        req.setUrl(QUrl(QString("%1%2").arg(MASTER_SERVER_ADDRESS, "/store")));
+        req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+        req.setHeader(QNetworkRequest::ContentLengthHeader, data.length());
+
+        manager->post(req, data);
     }
+}
+
+void PST05Store::connectResponse(QNetworkReply *reply)
+{
+    if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == QHttpResponse::STATUS_OK)
+    {
+        connectTimer->stop();
+
+        // Reconnect the manager
+        connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(dataSaveResponse(QNetworkReply*)));
+
+        deviceQueryTimer->start(deviceQueryInterval);
+    }
+    reply->deleteLater();
+}
+
+void PST05Store::dataSaveResponse(QNetworkReply *reply)
+{
+    // TODO: After each POST to the master server (if UNsuccessfuly) save the average data in a file
+    // TODO: If successfully POSTed then clean up the list
 }
