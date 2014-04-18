@@ -51,9 +51,11 @@ private:
     QList<QJsonObject> averageData;
     QList<PST05Data> deviceQueries;
 
+    QString masterServerAddress;
     uint ticks;
     uint deviceQueryInterval;
     uint postInterval;
+    uint port;
 };
 
 #endif // PST05STORE_H

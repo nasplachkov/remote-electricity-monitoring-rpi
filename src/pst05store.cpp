@@ -5,8 +5,10 @@ PST05Store::PST05Store(QSettings *settings, PST05Query *iQuery) :
 {
     this->settings = settings;
     this->iQuery = iQuery;
+    masterServerAddress = settings->value("masterServer", MASTER_SERVER_ADDRESS).toString();
     deviceQueryInterval = settings->value("regularInterval", REGULARQUERY_INTERVAL_DEFAULT).toUInt();
     postInterval = settings->value("postInterval", POST_INTERVAL_DEFAULT).toUInt();
+    port = settings->value("port", PORT_DEFAULT).toUInt();
 
     deviceQueryTimer = new QTimer(this);
     connect(deviceQueryTimer, SIGNAL(timeout()), this, SLOT(deviceQueryTimeout()));
@@ -29,7 +31,7 @@ void PST05Store::connectTimeout()
 {
     QJsonObject obj;
     obj["id"] = QString(iQuery->deviceId());
-    obj["port"] = QString("%1").arg(settings->value("PORT", PORT_DEFAULT).toUInt());
+    obj["port"] = QString("%1").arg(port);
     obj["date"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
     QJsonDocument document;
@@ -38,7 +40,7 @@ void PST05Store::connectTimeout()
     QByteArray data = document.toJson();
 
     QNetworkRequest req;
-    req.setUrl(QUrl(QString("%1%2").arg(MASTER_SERVER_ADDRESS, "/connect")));
+    req.setUrl(QUrl(QString("%1%2").arg(masterServerAddress, "/connect")));
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     req.setHeader(QNetworkRequest::ContentLengthHeader, data.length());
 
@@ -101,7 +103,7 @@ void PST05Store::deviceQueryTimeout()
         QByteArray data = json.toJson();
 
         QNetworkRequest req;
-        req.setUrl(QUrl(QString("%1%2").arg(MASTER_SERVER_ADDRESS, "/store")));
+        req.setUrl(QUrl(QString("%1%2").arg(masterServerAddress, "/store")));
         req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
         req.setHeader(QNetworkRequest::ContentLengthHeader, data.length());
 

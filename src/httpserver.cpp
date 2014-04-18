@@ -5,9 +5,9 @@ HttpServer::HttpServer(QSettings *settings, PST05Query *iQuery)
     server = new QHttpServer(this);
     connect(server, SIGNAL(newRequest(QHttpRequest*,QHttpResponse*)), this, SLOT(router(QHttpRequest*,QHttpResponse*)));
 
-    if (server->listen(settings->value("PORT", PORT_DEFAULT).toUInt()))
+    if (server->listen(settings->value("port", PORT_DEFAULT).toUInt()))
     {
-        qDebug() << "Listening on port " << settings->value("PORT", PORT_DEFAULT).toUInt();
+        qDebug() << "Listening on port " << settings->value("port", PORT_DEFAULT).toUInt();
     }
     else
     {
