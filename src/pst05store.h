@@ -10,6 +10,7 @@
 #include <QTimer>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QFile>
 
 #include "httpserver.h"
 #include "pst05query.h"
@@ -45,11 +46,14 @@ private slots:
     void disconnectResponse(QNetworkReply *reply);
 
 private:
+    bool saveAverageDataLocally();
+
     QSettings *settings;
 
     QTimer *connectTimer;
     QTimer *deviceQueryTimer;
 
+    QFile *dataFile;
     QNetworkAccessManager *manager;
     PST05Query *iQuery;
     QList<QJsonObject> averageData;

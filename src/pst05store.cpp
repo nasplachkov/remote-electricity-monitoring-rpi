@@ -10,6 +10,18 @@ PST05Store::PST05Store(QSettings *settings, PST05Query *iQuery) :
     postInterval = settings->value("postInterval", POST_INTERVAL_DEFAULT).toUInt();
     port = settings->value("port", PORT_DEFAULT).toUInt();
 
+    dataFile = new QFile("/tmp/pst05_average_data");
+    if (dataFile->open(QFile::ReadOnly))
+    {
+        QList<QByteArray> data = dataFile->readAll().split('\n');
+        foreach (QByteArray datum, data) {
+            QJsonDocument json = QJsonDocument::fromJson(datum);
+            averageData.append(json.object());
+        }
+
+        dataFile->close();
+    }
+
     deviceQueryTimer = new QTimer(this);
     connect(deviceQueryTimer, SIGNAL(timeout()), this, SLOT(deviceQueryTimeout()));
 
@@ -28,6 +40,11 @@ PST05Store::~PST05Store()
     if (deviceQueryTimer) deviceQueryTimer->deleteLater();
     if (manager) manager->deleteLater();
     if (piServer) piServer->deleteLater();
+    if (dataFile)
+    {
+        if (dataFile->isOpen()) dataFile->close();
+        dataFile->deleteLater();
+    }
 }
 
 void PST05Store::connectTimeout()
@@ -119,6 +136,9 @@ void PST05Store::disconnect()
 {
     if (connected)
     {
+        saveAverageDataLocally();
+
+        // Notify master server
         QJsonObject obj;
         obj["deviceId"] = QString(iQuery->deviceId());
 
@@ -165,8 +185,20 @@ void PST05Store::connectResponse(QNetworkReply *reply)
 
 void PST05Store::dataSaveResponse(QNetworkReply *reply)
 {
-    // TODO: After each POST to the master server (if UNsuccessfuly) save the average data in a file
-    // TODO: If successfully POSTed then clean up the list
+    if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == QHttpResponse::STATUS_CREATED)
+    {
+        averageData.clear();
+
+        // Clear the file also
+        if (dataFile->open(QFile::WriteOnly | QFile::Truncate))
+        {
+            dataFile->close();
+        }
+    }
+    else
+    {
+        saveAverageDataLocally();
+    }
     reply->deleteLater();
 }
 
@@ -177,4 +209,19 @@ void PST05Store::disconnectResponse(QNetworkReply *reply)
 
     qDebug() << "Shutting down...";
     QCoreApplication::quit();
+}
+
+bool PST05Store::saveAverageDataLocally()
+{
+    bool res;
+    if ((res = dataFile->open(QFile::WriteOnly | QFile::Truncate)))
+    {
+        foreach (QJsonObject obj, averageData) {
+            QJsonDocument json; json.setObject(obj);
+            dataFile->write(json.toJson() + '\n');
+        }
+        dataFile->close();
+    }
+
+    return res;
 }
