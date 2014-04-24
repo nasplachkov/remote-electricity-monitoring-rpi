@@ -1,6 +1,6 @@
 #include "pst05store.h"
 
-PST05Store::PST05Store(QObject *parent, QSettings *settings, PST05Query *iQuery) : QObject(parent),
+PST05Store::PST05Store(QSettings *settings, PST05Query *iQuery) :
     piServer(0), ticks(0), connected(false)
 {
     this->settings = settings;
@@ -174,8 +174,7 @@ void PST05Store::disconnectResponse(QNetworkReply *reply)
 {
     // Stop the application w/e the response
     if (reply) reply->deleteLater();
-    QCoreApplication *app = (QCoreApplication *)parent();
 
     qDebug() << "Shutting down...";
-    app->quit();
+    QCoreApplication::quit();
 }

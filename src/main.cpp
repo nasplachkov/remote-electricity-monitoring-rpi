@@ -6,7 +6,6 @@
 
 #include <signal.h>
 
-QCoreApplication *app = 0;
 PST05Store *store = 0;
 
 void signalHandler(int sig)
@@ -19,15 +18,13 @@ void signalHandler(int sig)
     }
     else
     {
-        if (app) app->quit();
-        else exit(0);
+        QCoreApplication::quit();
     }
 }
 
 int main(int argc, char **argv)
 {
     QCoreApplication a(argc, argv);
-    app = &a;
 
     qDebug() << "Reading up the settings file...";
     QSettings settings("settings.ini", QSettings::IniFormat);
@@ -36,7 +33,7 @@ int main(int argc, char **argv)
     PST05 pst05(&settings);
 
     qDebug() << "Intializing data store...";
-    PST05Store pst05store(&a, &settings, &pst05);
+    PST05Store pst05store(&settings, &pst05);
     store = &pst05store;
 
     // Handle some POSIX signals

@@ -31,7 +31,7 @@ class PST05Store : public QObject
 {
     Q_OBJECT
 public:
-    PST05Store(QObject *parent, QSettings *settings, PST05Query *iQuery);
+    PST05Store(QSettings *settings, PST05Query *iQuery);
     ~PST05Store();
 
     void disconnect();
