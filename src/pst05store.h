@@ -1,6 +1,7 @@
 #ifndef PST05STORE_H
 #define PST05STORE_H
 
+#include <QCoreApplication>
 #include <QSettings>
 #include <QList>
 #include <QNetworkAccessManager>
@@ -10,7 +11,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 
-#include "../qhttpserver/qhttpresponse.h"
+#include "httpserver.h"
 #include "pst05query.h"
 #include "pst05data.h"
 
@@ -30,8 +31,10 @@ class PST05Store : public QObject
 {
     Q_OBJECT
 public:
-    PST05Store(QSettings *settings, PST05Query *iQuery);
+    PST05Store(QObject *parent, QSettings *settings, PST05Query *iQuery);
     ~PST05Store();
+
+    void disconnect();
 
 private slots:
     void connectTimeout();
@@ -39,6 +42,7 @@ private slots:
 
     void connectResponse(QNetworkReply *reply);
     void dataSaveResponse(QNetworkReply *reply);
+    void disconnectResponse(QNetworkReply *reply);
 
 private:
     QSettings *settings;
@@ -51,11 +55,14 @@ private:
     QList<QJsonObject> averageData;
     QList<PST05Data> deviceQueries;
 
+    HttpServer *piServer;
+
     QString masterServerAddress;
     uint ticks;
     uint deviceQueryInterval;
     uint postInterval;
     uint port;
+    bool connected;
 };
 
 #endif // PST05STORE_H

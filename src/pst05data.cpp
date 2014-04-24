@@ -7,6 +7,7 @@ PST05Data::PST05Data(bool empty)
 
 PST05Data::PST05Data(const PST05Data &object)
 {
+    empty = object.empty;
     U1 = object.U1;
     U2 = object.U2;
     U3 = object.U3;

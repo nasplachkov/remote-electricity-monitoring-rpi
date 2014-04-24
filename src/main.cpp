@@ -1,29 +1,43 @@
 #include <QCoreApplication>
 #include <QSettings>
 
-#include "httpserver.h"
+#include "pst05.h"
+#include "pst05store.h"
 
 #include <signal.h>
 
+QCoreApplication *app = 0;
+PST05Store *store = 0;
+
 void signalHandler(int sig)
 {
-    qDebug() << "Received: " << sig;
+    qDebug() << "Received signal: " << sig;
 
-    // TODO: "/disconnect" the store from the master server and probably shutdown the application
-
-    // TODO: Remove this
-    exit(0);
+    if (store)
+    {
+        store->disconnect();
+    }
+    else
+    {
+        if (app) app->quit();
+        else exit(0);
+    }
 }
 
 int main(int argc, char **argv)
 {
     QCoreApplication a(argc, argv);
+    app = &a;
 
-    qDebug() << "Reading up the settings file...\n";
+    qDebug() << "Reading up the settings file...";
     QSettings settings("settings.ini", QSettings::IniFormat);
 
-    qDebug() << "Starting up the server...\n";
-    HttpServer piHttpServer(&settings);
+    qDebug() << "Intializing serial port...";
+    PST05 pst05(&settings);
+
+    qDebug() << "Intializing data store...";
+    PST05Store pst05store(&a, &settings, &pst05);
+    store = &pst05store;
 
     // Handle some POSIX signals
     struct sigaction sig;

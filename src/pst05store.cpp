@@ -1,7 +1,7 @@
 #include "pst05store.h"
 
-PST05Store::PST05Store(QSettings *settings, PST05Query *iQuery) :
-    ticks(0)
+PST05Store::PST05Store(QObject *parent, QSettings *settings, PST05Query *iQuery) : QObject(parent),
+    piServer(0), ticks(0), connected(false)
 {
     this->settings = settings;
     this->iQuery = iQuery;
@@ -19,12 +19,15 @@ PST05Store::PST05Store(QSettings *settings, PST05Query *iQuery) :
     connectTimer = new QTimer(this);
     connect(connectTimer, SIGNAL(timeout()), this, SLOT(connectTimeout()));
     connectTimer->start(CONNECT_INTERVAL);
+
+    qDebug() << "Data store is initialized!";
 }
 
 PST05Store::~PST05Store()
 {
     if (deviceQueryTimer) deviceQueryTimer->deleteLater();
     if (manager) manager->deleteLater();
+    if (piServer) piServer->deleteLater();
 }
 
 void PST05Store::connectTimeout()
@@ -112,12 +115,41 @@ void PST05Store::deviceQueryTimeout()
     }
 }
 
+void PST05Store::disconnect()
+{
+    if (connected)
+    {
+        QJsonObject obj;
+        obj["deviceId"] = QString(iQuery->deviceId());
+
+        QJsonDocument json;
+        json.setObject(obj);
+        QByteArray data = json.toJson();
+
+        QNetworkRequest req;
+        req.setUrl(QUrl(QString("%1%2").arg(masterServerAddress, "/store")));
+        req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
+        req.setHeader(QNetworkRequest::ContentLengthHeader, data.length());
+
+        connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(disconnectResponse(QNetworkReply*)));
+        manager->post(req, data);
+    }
+    else
+    {
+        disconnectResponse(0);
+    }
+}
+
 void PST05Store::connectResponse(QNetworkReply *reply)
 {
     if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == QHttpResponse::STATUS_OK)
     {
         qDebug() << "Connection to the master server was successful. The device has been registered!";
         connectTimer->stop();
+
+        qDebug() << "Starting up the server...";
+        piServer = new HttpServer(settings, iQuery);
+        connected = true;
 
         // Reconnect the manager
         connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(dataSaveResponse(QNetworkReply*)));
@@ -135,4 +167,15 @@ void PST05Store::dataSaveResponse(QNetworkReply *reply)
 {
     // TODO: After each POST to the master server (if UNsuccessfuly) save the average data in a file
     // TODO: If successfully POSTed then clean up the list
+    reply->deleteLater();
+}
+
+void PST05Store::disconnectResponse(QNetworkReply *reply)
+{
+    // Stop the application w/e the response
+    if (reply) reply->deleteLater();
+    QCoreApplication *app = (QCoreApplication *)parent();
+
+    qDebug() << "Shutting down...";
+    app->quit();
 }

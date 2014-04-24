@@ -4,8 +4,6 @@
 #include <QJsonObject>
 #include <QDateTime>
 
-#include "pst05.h"
-
 /**
  * @brief The PST05Data class
  *
