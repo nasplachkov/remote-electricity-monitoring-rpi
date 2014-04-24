@@ -62,7 +62,7 @@ PST05Data PST05::queryDevice()
     else
     {
         QByteArray data;
-        uint bytesRemaining = 4, i = 0;
+        uint bytesRemaining = 5, i = 0;
 
         // Wait 2 seconds for data at MOST
         while (serial->waitForReadyRead(2000) && bytesRemaining > 0)
@@ -83,7 +83,7 @@ PST05Data PST05::queryDevice()
         }
 
         // We got it all, so let's parse it!
-        data = data.right(data.size() - 4);
+        data = data.right(data.size() - 5);
         PST05Data pstdata(false);
 
         pstdata.U1 = (((float)data[0] * 128 + (float)data[1]) / 10 ) * 220 / 57.7;
