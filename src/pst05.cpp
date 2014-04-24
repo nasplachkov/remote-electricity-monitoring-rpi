@@ -51,6 +51,7 @@ PST05::~PST05()
     }
 }
 
+// Possibly make it asynchronously some day
 PST05Data PST05::queryDevice()
 {
     char queryCommand[] = {(char) 0xFA, (char) 0x82};
@@ -67,7 +68,9 @@ PST05Data PST05::queryDevice()
         // Wait 2 seconds for data at MOST
         while (serial->waitForReadyRead(2000) && bytesRemaining > 0)
         {
-            data += serial->read(bytesRemaining);
+            QByteArray read = serial->read(bytesRemaining);
+            data += read;
+            bytesRemaining -= read.size();
 
             if (i++ == 0 && data.size() > 3)
             {
