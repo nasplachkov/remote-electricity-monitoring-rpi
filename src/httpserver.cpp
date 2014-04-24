@@ -31,6 +31,11 @@ void HttpServer::router(QHttpRequest *req, QHttpResponse *res)
     {
         manageSensorData(req, res);
     }
+    else if (req->path() == "/ping")
+    {
+        res->writeHead(QHttpResponse::STATUS_OK);
+        res->end();
+    }
     else
     {
         res->writeHead(QHttpResponse::STATUS_NOT_FOUND);
