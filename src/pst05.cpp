@@ -15,9 +15,9 @@ PST05::PST05(QSettings *settings)
     mDeviceId = DEFAULT_DEVICE_ID;
     foreach (QByteArray line, procInfo.readAll().split('\n')) {
         QList<QByteArray> pair = line.split(':');
-        if (pair[0] == "Serial")
+        if (pair[0].trimmed() == "Serial")
         {
-            mDeviceId = pair[1];
+            mDeviceId = pair[1].trimmed();
         }
     }
     qDebug() << "Device ID is: " << mDeviceId;
