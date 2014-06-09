@@ -54,6 +54,12 @@ PST05::~PST05()
 // Possibly make it asynchronously some day
 PST05Data PST05::queryDevice()
 {
+    // Temporary test
+    PST05Data datum(false);
+    datum.U1 = 335.553;
+    datum.I1 = 123;
+    return datum;
+
     char queryCommand[] = {(char) 0xFA, (char) 0x82};
     if (serial->write(queryCommand) == -1)
     {

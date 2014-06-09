@@ -31,6 +31,7 @@ PST05Store::PST05Store(QSettings *settings, PST05Query *iQuery) :
     connectTimer = new QTimer(this);
     connect(connectTimer, SIGNAL(timeout()), this, SLOT(connectTimeout()));
     connectTimer->start(CONNECT_INTERVAL);
+    connectTimeout();
 
     qDebug() << "Data store is initialized!";
 }
@@ -52,7 +53,7 @@ void PST05Store::connectTimeout()
     QJsonObject obj;
     obj["id"] = QString(iQuery->deviceId());
     obj["port"] = QString("%1").arg(port);
-    obj["date"] = QDateTime::currentDateTime().toString(Qt::ISODate);
+    //obj["date"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
     QJsonDocument document;
     document.setObject(obj);
@@ -60,7 +61,10 @@ void PST05Store::connectTimeout()
     QByteArray data = document.toJson();
 
     QNetworkRequest req;
-    req.setUrl(QUrl(QString("%1%2").arg(masterServerAddress, "/connect")));
+    QString url = QString("%1%2").arg(masterServerAddress, "/connect");
+    req.setUrl(QUrl(url));
+    //req.setRawHeader("Host", "192.168.0.4:8080");
+    req.setRawHeader("Authorization", "Basic cmFzcGJlcnJ5OnRyaXBsZXBp");
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     req.setHeader(QNetworkRequest::ContentLengthHeader, data.length());
 
@@ -162,6 +166,7 @@ void PST05Store::disconnect()
 
 void PST05Store::connectResponse(QNetworkReply *reply)
 {
+    qDebug() << reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt();
     if (reply->attribute(QNetworkRequest::HttpStatusCodeAttribute).toInt() == QHttpResponse::STATUS_OK)
     {
         qDebug() << "Connection to the master server was successful. The device has been registered!";

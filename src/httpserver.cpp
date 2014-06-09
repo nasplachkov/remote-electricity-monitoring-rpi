@@ -58,11 +58,13 @@ noData:
         PST05Data pst05data = iQuery->queryDevice();
         if (pst05data.isEmpty()) goto noData;
 
-        QJsonObject data = pst05data.toJSON();
-        QJsonDocument json(data);
+        QJsonDocument json(pst05data.toJSON());
+        QByteArray data = json.toJson();
 
+        res->setHeader("Content-Type", "application/json");
+        res->setHeader("Content-Length", QString("%1").arg(data.length()));
         res->writeHead(QHttpResponse::STATUS_OK);
-        res->write(json.toBinaryData());
+        res->write(data);
         res->end();
     }
     else

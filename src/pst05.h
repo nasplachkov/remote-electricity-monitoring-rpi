@@ -8,7 +8,7 @@
 
 #include "pst05query.h"
 
-#define DEFAULT_DEVICE_ID "0x00000000"
+#define DEFAULT_DEVICE_ID "raspberry"
 
 class PST05 : public QObject, public PST05Query
 {

@@ -3,6 +3,8 @@
 
 #include <QSettings>
 #include <QJsonDocument>
+#include <QJsonArray>
+#include <QJsonObject>
 
 #include <qhttpserver.h>
 #include <qhttprequest.h>

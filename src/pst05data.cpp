@@ -3,6 +3,15 @@
 PST05Data::PST05Data(bool empty)
 {
     this->empty = empty;
+    U1 = 0;
+    U2 = 0;
+    U3 = 0;
+    I1 = 0;
+    I2 = 0;
+    I3 = 0;
+    P = 0;
+    Q = 0;
+    F = 0;
 }
 
 PST05Data::PST05Data(const PST05Data &object)
@@ -27,17 +36,16 @@ bool PST05Data::isEmpty()
 QJsonObject PST05Data::toJSON()
 {
     QJsonObject obj;
-    obj["U1"] = U1;
-    obj["U2"] = U2;
-    obj["U3"] = U3;
-    obj["I1"] = I1;
-    obj["I2"] = I2;
-    obj["I3"] = I3;
-    obj["P"] = P;
-    obj["Q"] = Q;
-    obj["F"] = F;
+    obj["u1"] = U1;
+    obj["u2"] = U2;
+    obj["u3"] = U3;
+    obj["i1"] = I1;
+    obj["i2"] = I2;
+    obj["i3"] = I3;
+    obj["p"] = P;
+    obj["q"] = Q;
+    obj["f"] = F;
 
-    obj["id"] = QString(deviceId);
     obj["date"] = QDateTime::currentDateTime().toString(Qt::ISODate);
 
     return obj;

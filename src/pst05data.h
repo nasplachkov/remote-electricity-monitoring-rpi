@@ -26,8 +26,6 @@ public:
     double P, Q;
     double F;
 
-    QByteArray deviceId;
-
 private:
     bool empty;
 };
