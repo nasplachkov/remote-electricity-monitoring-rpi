@@ -5,7 +5,7 @@ TEMPLATE = subdirs
 SUBDIRS += qhttpserver \
     src
 
-install_settings.path = $$OUT_PWD/src
-install_settings.files = settings.ini
+settings.path = $$OUT_PWD/build
+settings.files = settings.ini
 
-INSTALLS += install_settings
+INSTALLS += settings

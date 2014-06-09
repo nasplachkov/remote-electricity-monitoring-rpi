@@ -7,6 +7,7 @@
 QT += network serialport
 QT -= gui
 
+DESTDIR = $$OUT_PWD/../build
 TARGET = remote-electricity-monitoring
 
 TEMPLATE = app
