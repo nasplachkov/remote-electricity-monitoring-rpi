@@ -63,7 +63,6 @@ void PST05Store::connectTimeout()
     QNetworkRequest req;
     QString url = QString("%1%2").arg(masterServerAddress, "/connect");
     req.setUrl(QUrl(url));
-    //req.setRawHeader("Host", "192.168.0.4:8080");
     req.setRawHeader("Authorization", "Basic cmFzcGJlcnJ5OnRyaXBsZXBp");
     req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
     req.setHeader(QNetworkRequest::ContentLengthHeader, data.length());
@@ -127,7 +126,9 @@ void PST05Store::deviceQueryTimeout()
         QByteArray data = json.toJson();
 
         QNetworkRequest req;
-        req.setUrl(QUrl(QString("%1%2").arg(masterServerAddress, "/store")));
+        QString url = QString("%1%2").arg(masterServerAddress, "/store");
+        req.setUrl(QUrl(url));
+        req.setRawHeader("Authorization", "Basic cmFzcGJlcnJ5OnRyaXBsZXBp");
         req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
         req.setHeader(QNetworkRequest::ContentLengthHeader, data.length());
 
@@ -151,7 +152,9 @@ void PST05Store::disconnect()
         QByteArray data = json.toJson();
 
         QNetworkRequest req;
-        req.setUrl(QUrl(QString("%1%2").arg(masterServerAddress, "/store")));
+        QString url = QString("%1%2").arg(masterServerAddress, "/store");
+        req.setUrl(QUrl(url));
+        req.setRawHeader("Authorization", "Basic cmFzcGJlcnJ5OnRyaXBsZXBp");
         req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
         req.setHeader(QNetworkRequest::ContentLengthHeader, data.length());
 
