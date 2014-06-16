@@ -51,68 +51,103 @@ PST05::~PST05()
     }
 }
 
+void PST05::writeTestDataToSerial(uint cbytes)
+{
+    QByteArray data;
+    qsrand(QTime::currentTime().msec());
+    for (int i = 0; i < cbytes; i++)
+    {
+        data.append((char) (qrand() % 256));
+    }
+    data[2] = 49;   // data bytes count...
+    serial->write(data);
+    serial->flush();
+}
+
 // Possibly make it asynchronously some day
 PST05Data PST05::queryDevice()
 {
-    // Temporary test
-    PST05Data datum(false);
-    datum.U1 = 335.553;
-    datum.I1 = 123;
-    return datum;
+    char res;
+    char queryAddress[] = {(char) 0xFA};
+    char queryCommand[] = {(char) 0x82};
 
-    char queryCommand[] = {(char) 0xFA, (char) 0x82};
-    if (serial->write(queryCommand) == -1)
+    if (!serial->isOpen()) return PST05Data(true);
+
+    // address
+    serial->write(queryAddress, 1);
+    serial->flush();
+    if (!serial->waitForReadyRead(2000))
     {
-        qDebug() << "Could not write the query bytes into the device, hence no response will be returned :-(";
+        writeTestDataToSerial(54);
+        goto rs232read;
+    }
+    serial->read(&res, 1);
+    if (res != queryAddress[0])
+    {
+        writeTestDataToSerial(54);
+        goto rs232read;
+    }
+
+    // command
+    serial->write(queryCommand, 1);
+    serial->flush();
+    if (!serial->waitForReadyRead(2000))
+    {
+        writeTestDataToSerial(54);
+        goto rs232read;
+    }
+    serial->read(&res, 1);
+    if (res != queryCommand[0])
+    {
+        writeTestDataToSerial(54);
+        goto rs232read;
+    }
+
+rs232read:
+    QByteArray data;
+    uint bytesRemaining = 5, i = 0;
+
+    // Wait 2 seconds for data at MOST
+    while (serial->waitForReadyRead(2000) && bytesRemaining > 0)
+    {
+        QByteArray read = serial->read(bytesRemaining);
+        data += read;
+        bytesRemaining -= read.size();
+
+        if (i++ == 0 && data.size() > 3)
+        {
+            // The third byte contains the number of bytes that will be available after the first 4
+            bytesRemaining += data[2];
+        }
+    }
+
+    // The data wasn't received OR incorrect checksum (not added)
+    if (bytesRemaining > 0)
+    {
         return PST05Data(true);
     }
-    else
-    {
-        QByteArray data;
-        uint bytesRemaining = 5, i = 0;
 
-        // Wait 2 seconds for data at MOST
-        while (serial->waitForReadyRead(2000) && bytesRemaining > 0)
-        {
-            QByteArray read = serial->read(bytesRemaining);
-            data += read;
-            bytesRemaining -= read.size();
+    // We got it all, so let's parse it!
+    data = data.right(data.size() - 5);
+    PST05Data pstdata(false);
 
-            if (i++ == 0 && data.size() > 3)
-            {
-                // The third byte contains the number of bytes that will be available after the first 4
-                bytesRemaining += data[2];
-            }
-        }
+    pstdata.U1 = (((float)data[0] * 128 + (float)data[1]) / 10 ) * 220 / 57.7;
+    pstdata.U2 = (((float)data[2] * 128 + (float)data[3]) / 10 ) * 220 / 57.7 ;
+    pstdata.U3 = (((float)data[4] * 128 + (float)data[5]) / 10 ) * 220 / 57.7;
 
-        // The data wasn't received OR incorrect checksum
-        if (bytesRemaining > 0)
-        {
-            return PST05Data(true);
-        }
+    pstdata.I1 = ((float)data[6] * 128 + (float)data[7]) / 1000;
+    pstdata.I2 = ((float)data[8] * 128 + (float)data[9]) / 1000;
+    pstdata.I3 = ((float)data[10] * 128 + (float)data[11]) / 1000;
 
-        // We got it all, so let's parse it!
-        data = data.right(data.size() - 5);
-        PST05Data pstdata(false);
+    pstdata.P = ((float)data[12] * 128 + (float)data[13]) / 10;
+    if (pstdata.P > 64*128) pstdata.P -= 128*128;
 
-        pstdata.U1 = (((float)data[0] * 128 + (float)data[1]) / 10 ) * 220 / 57.7;
-        pstdata.U2 = (((float)data[2] * 128 + (float)data[3]) / 10 ) * 220 / 57.7 ;
-        pstdata.U3 = (((float)data[4] * 128 + (float)data[5]) / 10 ) * 220 / 57.7;
+    pstdata.Q = ((float)data[14] * 128 + (float)data[15]) / 10;
+    if (pstdata.Q > 64*128) pstdata.Q -= 128*128;
 
-        pstdata.I1 = ((float)data[6] * 128 + (float)data[7]) / 1000;
-        pstdata.I2 = ((float)data[8] * 128 + (float)data[9]) / 1000;
-        pstdata.I3 = ((float)data[10] * 128 + (float)data[11]) / 1000;
+    pstdata.F = ((float)data[16] * 128 + (float)data[17]) / 100;
 
-        pstdata.P = ((float)data[12] * 128 + (float)data[13]) / 10;
-        if (pstdata.P > 64*128) pstdata.P -= 128*128;
-
-        pstdata.Q = ((float)data[14] * 128 + (float)data[15]) / 10;
-        if (pstdata.Q > 64*128) pstdata.Q -= 128*128;
-
-        pstdata.F = ((float)data[16] * 128 + (float)data[17]) / 100;
-
-        return pstdata;
-    }
+    return pstdata;
 }
 
 QByteArray PST05::deviceId()

@@ -29,3 +29,7 @@ LIBS += -L$$PWD/../ -lqhttpserver
 
 INCLUDEPATH += $$PWD/../qhttpserver
 DEPENDPATH += $$PWD/../qhttpserver
+
+target.path = $$OUT_PWD/../build
+
+INSTALLS += target

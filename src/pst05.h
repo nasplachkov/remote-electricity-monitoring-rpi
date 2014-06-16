@@ -5,6 +5,8 @@
 #include <QFile>
 #include <QSerialPort>
 #include <QDebug>
+#include <qglobal.h>
+#include <QTime>
 
 #include "pst05query.h"
 
@@ -28,6 +30,8 @@ signals:
 public slots:
 
 private:
+    void writeTestDataToSerial(uint cbytes);
+
     QSettings *settings;
     QSerialPort *serial;
     QByteArray mDeviceId;
