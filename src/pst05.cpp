@@ -20,11 +20,20 @@ PST05::PST05(QSettings *settings)
             mDeviceId = pair[1].trimmed();
         }
     }
+    mDeviceId = "raspberry";
     qDebug() << "Device ID is: " << mDeviceId;
 
     procInfo.close();
 
-    serial = new QSerialPort(settings->value("portName", "ttyS0").toString());
+    QList<QSerialPortInfo> ports =  QSerialPortInfo::availablePorts();
+    foreach (const QSerialPortInfo &info, ports) {
+        qDebug() << info.portName();
+        qDebug() << info.isBusy();
+        serial = new QSerialPort(info);
+        break;
+    }
+
+    //serial = new QSerialPort(settings->value("portName", "ttyS0").toString());
 
     if (serial->open(QSerialPort::ReadWrite))
     {
@@ -55,7 +64,7 @@ void PST05::writeTestDataToSerial(uint cbytes)
 {
     QByteArray data;
     qsrand(QTime::currentTime().msec());
-    for (int i = 0; i < cbytes; i++)
+    for (uint i = 0; i < cbytes; i++)
     {
         data.append((char) (qrand() % 256));
     }
@@ -76,30 +85,30 @@ PST05Data PST05::queryDevice()
     // address
     serial->write(queryAddress, 1);
     serial->flush();
-    if (!serial->waitForReadyRead(2000))
+    if (!serial->waitForReadyRead(30000))
     {
-        writeTestDataToSerial(54);
+        // writeTestDataToSerial(54);
         goto rs232read;
     }
     serial->read(&res, 1);
     if (res != queryAddress[0])
     {
-        writeTestDataToSerial(54);
+        // writeTestDataToSerial(54);
         goto rs232read;
     }
 
     // command
     serial->write(queryCommand, 1);
     serial->flush();
-    if (!serial->waitForReadyRead(2000))
+    if (!serial->waitForReadyRead(30000))
     {
-        writeTestDataToSerial(54);
+        // writeTestDataToSerial(54);
         goto rs232read;
     }
     serial->read(&res, 1);
     if (res != queryCommand[0])
     {
-        writeTestDataToSerial(54);
+        // writeTestDataToSerial(54);
         goto rs232read;
     }
 
@@ -108,7 +117,7 @@ rs232read:
     uint bytesRemaining = 5, i = 0;
 
     // Wait 2 seconds for data at MOST
-    while (serial->waitForReadyRead(2000) && bytesRemaining > 0)
+    while (serial->waitForReadyRead(60000))
     {
         QByteArray read = serial->read(bytesRemaining);
         data += read;
@@ -116,19 +125,26 @@ rs232read:
 
         if (i++ == 0 && data.size() > 3)
         {
+            // The address or the command returned is wrong (first 2 bits are 0)
+            if (data[0] != (queryAddress[0] & (char) 63)) break;
+            if (data[1] != (queryCommand[0] & (char) 63)) break;
+
             // The third byte contains the number of bytes that will be available after the first 4
             bytesRemaining += data[2];
         }
+        qDebug() << QString::number(bytesRemaining);
+        if (!bytesRemaining) break;
     }
 
     // The data wasn't received OR incorrect checksum (not added)
-    if (bytesRemaining > 0)
+    if (bytesRemaining > 0 || !checkCRC(data))
     {
         return PST05Data(true);
     }
 
-    // We got it all, so let's parse it!
+    // We got it all
     data = data.right(data.size() - 5);
+
     PST05Data pstdata(false);
 
     pstdata.U1 = (((float)data[0] * 128 + (float)data[1]) / 10 ) * 220 / 57.7;
@@ -153,4 +169,16 @@ rs232read:
 QByteArray PST05::deviceId()
 {
     return mDeviceId;
+}
+
+bool PST05::checkCRC(const QByteArray &data) {
+    unsigned short calcCRC = 0;
+
+    for (int i = 5; i < data.length(); i++)
+    {
+        calcCRC += data[i];
+    }
+
+    QByteArray crc((const char *) calcCRC, 2);
+    return data.mid(3, 2) == crc;
 }

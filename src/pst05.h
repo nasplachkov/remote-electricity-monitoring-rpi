@@ -4,6 +4,7 @@
 #include <QSettings>
 #include <QFile>
 #include <QSerialPort>
+#include <QSerialPortInfo>
 #include <QDebug>
 #include <qglobal.h>
 #include <QTime>
@@ -24,6 +25,7 @@ public:
      */
     PST05Data queryDevice();
     QByteArray deviceId();
+    bool checkCRC(const QByteArray &data);
 
 signals:
 

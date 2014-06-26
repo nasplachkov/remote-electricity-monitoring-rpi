@@ -36,6 +36,8 @@ int main(int argc, char **argv)
     PST05Store pst05store(&settings, &pst05);
     store = &pst05store;
 
+    //HttpServer pi(&settings, &pst05);
+
     // Handle some POSIX signals
     struct sigaction sig;
     sig.sa_flags = SA_SIGINFO;

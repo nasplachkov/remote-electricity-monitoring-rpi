@@ -10,6 +10,8 @@ PST05Store::PST05Store(QSettings *settings, PST05Query *iQuery) :
     postInterval = settings->value("postInterval", POST_INTERVAL_DEFAULT).toUInt();
     port = settings->value("port", PORT_DEFAULT).toUInt();
 
+    qDebug() << masterServerAddress;
+
     dataFile = new QFile("/tmp/pst05_average_data");
     if (dataFile->open(QFile::ReadOnly))
     {
@@ -118,7 +120,7 @@ void PST05Store::deviceQueryTimeout()
         }
 
         QJsonObject obj;
-        obj["deviceId"] = QString(iQuery->deviceId());
+        obj["id"] = QString(iQuery->deviceId());
         obj["queries"] = arr;
 
         QJsonDocument json;
@@ -145,19 +147,20 @@ void PST05Store::disconnect()
 
         // Notify master server
         QJsonObject obj;
-        obj["deviceId"] = QString(iQuery->deviceId());
+        obj["id"] = QString(iQuery->deviceId());
 
         QJsonDocument json;
         json.setObject(obj);
         QByteArray data = json.toJson();
 
         QNetworkRequest req;
-        QString url = QString("%1%2").arg(masterServerAddress, "/store");
+        QString url = QString("%1%2").arg(masterServerAddress, "/disconnect");
         req.setUrl(QUrl(url));
         req.setRawHeader("Authorization", "Basic cmFzcGJlcnJ5OnRyaXBsZXBp");
         req.setHeader(QNetworkRequest::ContentTypeHeader, "application/json");
         req.setHeader(QNetworkRequest::ContentLengthHeader, data.length());
 
+        connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(slot()));
         connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(disconnectResponse(QNetworkReply*)));
         manager->post(req, data);
     }
@@ -180,6 +183,7 @@ void PST05Store::connectResponse(QNetworkReply *reply)
         connected = true;
 
         // Reconnect the manager
+        connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(slot()));
         connect(manager, SIGNAL(finished(QNetworkReply*)), this, SLOT(dataSaveResponse(QNetworkReply*)));
 
         deviceQueryTimer->start(deviceQueryInterval);
